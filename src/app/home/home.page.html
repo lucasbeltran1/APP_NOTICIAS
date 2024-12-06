@@ -1,0 +1,270 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button> <!-- Botón para desplegar el menú -->
+    </ion-buttons>
+
+    <!-- Botón central para mostrar clima -->
+    <ion-title>
+      <ion-button (click)="toggleWeatherSections()">
+        Clima
+      </ion-button>
+    </ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button [routerLink]="['/login2']" class="login-button">
+        Login
+      </ion-button>
+      <ion-avatar slot="end" class="avatar">
+        <!-- Imagen de perfil con tamaño ajustado -->
+        <img src="assets/img/avatar.jpg" alt="avatar" />
+      </ion-avatar>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<!-- Menú lateral de Categorías -->
+<ion-menu side="start" contentId="main-content">
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Categorías</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  <ion-content>
+    <ion-list>
+      <ion-item routerLink="/noticias">Destacadas</ion-item>
+      <ion-item routerLink="/home3">Naturaleza</ion-item>
+      <ion-item routerLink="/animation">Política</ion-item>
+      <ion-item routerLink="/deportes">Deportes</ion-item>
+      <ion-item routerLink="/cine">Cine</ion-item>
+      <ion-item routerLink="/internacional">Internacional</ion-item>
+    </ion-list>
+    <ion-toolbar>
+      <ion-title>Sub-Categoria</ion-title>
+      <ion-item routerLink="/ionic-storage-module">Ingresar noticias</ion-item>
+      <ion-item routerLink="/login">Menu</ion-item>
+    </ion-toolbar>
+  </ion-content>
+</ion-menu>
+
+<ion-content [fullscreen]="true" id="main-content">
+  <!-- Sección de encabezado -->
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Ionic</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <!-- Sección de Clima controlada por la variable -->
+  <ng-container *ngIf="showWeatherSections">
+    <!-- Formulario para ingresar la ciudad y opción para usar ubicación actual -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Consulta el Clima</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item>
+          <ion-label>Usar mi ubicación actual</ion-label>
+          <ion-checkbox [(ngModel)]="useCurrentLocation"></ion-checkbox>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating">Ciudad</ion-label>
+          <ion-input [(ngModel)]="city" [disabled]="useCurrentLocation" placeholder="Ingrese el nombre de la ciudad"></ion-input>
+        </ion-item>
+        <ion-button expand="block" (click)="getWeather()">Consultar Clima</ion-button>
+        <!-- Mostrar la ciudad actual si está habilitado el uso de la ubicación -->
+        <div *ngIf="useCurrentLocation && currentCityName">
+          <p><strong>Ciudad Actual:</strong> {{ currentCityName }}</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Sección para mostrar el clima actual -->
+    <ion-card *ngIf="weatherData">
+      <ion-card-header>
+        <ion-card-title>Clima Actual en {{ city }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="clima-horizontal">
+          <p><strong>Temperatura:</strong> {{ weatherData.main.temp }} °C</p>
+          <p><strong>Descripción:</strong> {{ weatherData.weather[0].description }}</p>
+          <img [src]="'https://openweathermap.org/img/wn/' + weatherData.weather[0].icon + '@2x.png'" alt="Icono del clima" />
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Sección para mostrar el pronóstico de los próximos días -->
+    <ion-card *ngIf="forecastData">
+      <ion-card-header>
+        <ion-card-title>Pronóstico para los próximos días en {{ city }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div *ngFor="let forecast of forecastData" class="pronostico-item">
+          <p><strong>Fecha:</strong> {{ forecast.date }}</p>
+          <p><strong>Temperatura Máxima:</strong> {{ forecast.temp_max }} °C</p>
+          <p><strong>Temperatura Mínima:</strong> {{ forecast.temp_min }} °C</p>
+          <p><strong>Descripción:</strong> {{ forecast.description }}</p>
+          <img [src]="'https://openweathermap.org/img/wn/' + forecast.icon + '@2x.png'" alt="Icono del clima" />
+          <hr />
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+
+  <!-- Tarjetas de noticias -->
+  <ion-grid>
+    <ion-row>
+      <ion-col size="12">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="https://marketplace.canva.com/EAFrDm3ydqw/1/0/1600w/canva-presentaci%C3%B3n-noticias-telediario-corporativo-azul-rojo-Vh4S5Wt7FD4.jpg" />
+          <ion-card-header>
+            <ion-card-title>Últimas noticias</ion-card-title>
+            <ion-card-subtitle>Información de la noticia</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            Aquí escribir un breve resumen de la noticia.
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <!-- Otras tarjetas con funcionalidad de "Leer más" -->
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card1.jpg" />
+          <ion-card-header>
+            <ion-card-title>¿Es correcto pisar el pedal de embrague y el de freno al mismo tiempo al momento de frenar en un vehículo?</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[0]">
+            <ion-card-subtitle>
+              Al momento de conducir son varios los aspectos a los cuales los conductores deben prestar especial cuidado para evitar cualquier tipo de incidente frente al volante.
+            </ion-card-subtitle>
+            En conversación con ADN.cl, el director de Movilidad de Automóvil Club de Chile, Alberto Escobar, detalló que, en general, la primera maniobra “es frenar, cuando vas en un auto mecánico, evidentemente, y luego poder embragar con la posibilidad de que no se te detenga el auto”.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(0)">
+            {{ showContent[0] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card2.jpg" />
+          <ion-card-header>
+            <ion-card-title>Este Majin Buu volando con un dispositivo de levitación magnética hará enloquecer a los fanáticos de Dragon Ball Z</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[1]">
+            <ion-card-subtitle>Las figuras de acción de Dragon Ball aparecen en todas las formas y estilos.</ion-card-subtitle>
+            El Majin Buu volador con levitación magnética tiene una altura total como pieza completa, de 13 centímetros, un ancho de 14.8 centímetros y una profundidad de 13 centímetros. Las características del personaje son exactamente las mismas que aparecen en el último arco de Dragon Ball Z.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(1)">
+            {{ showContent[1] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card3.jpg" />
+          <ion-card-header>
+            <ion-card-title>Cómo poner la bandera chilena estas Fiestas Patrias 2024 y evitar que te saquen una multa</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[2]">
+            <ion-card-subtitle>¡Que no te saquen la multa!, así que no olvides sacar tu bandera chilena y colgarla en tu casa.</ion-card-subtitle>
+            Es importante saber que la Ley 20.537 obliga a instalar la bandera chilena en nuestras casas y edificios públicos los días 18 y 19 de septiembre.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(2)">
+            {{ showContent[2] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card4.jpg" />
+          <ion-card-header>
+            <ion-card-title>¿Vas a comprar un auto usado?</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[3]">
+            <ion-card-subtitle>Este es el kilometraje que debería tener el vehículo según sus años de uso.</ion-card-subtitle>
+            En concreto, el kilometraje del vehículo es uno de los parámetros más importantes que se debe revisar en un vehículo antes de comprarlo.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(3)">
+            {{ showContent[3] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card5.jpg" />
+          <ion-card-header>
+            <ion-card-title>Festival de Toronto 2024: más estrellas y más estrenos</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[4]">
+            <ion-card-subtitle>Vanessa Kirby en el estreno de 'Edén'</ion-card-subtitle>
+            La actriz es una de las protagonistas de Edén, el filme basado en hechos reales y dirigido por Ron Howard. Comparte reparto con Jude Law, Sydney Sweeney, Ana de Armas y Daniel Brühl.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(4)">
+            {{ showContent[4] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card6.jpg" />
+          <ion-card-header>
+            <ion-card-title>"Era una pesadilla": El motivo del drástico cambio físico de ex luchador de la WWE</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[5]">
+            <ion-card-subtitle>Durante la primera década del 2000's Dave Bautista se posicionó como uno de los luchadores más reconocidos de la WWE bajo el seudónimo de "Batista".</ion-card-subtitle>
+            Bautista ha trabajado en películas como Guardianes de la Galaxia, James Bond Spectre, Blade Runner 2049, Dune, entre otras.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(5)">
+            {{ showContent[5] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card7.jpg" />
+          <ion-card-header>
+            <ion-card-title>DT del Southampton se entera de la humillación de Gareca a Brereton y así reacciona</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[6]">
+            <ion-card-subtitle>Ben Brereton se integró a los trabajos del Southampton luego de un amargo viaje con la selección chilena.</ion-card-subtitle>
+            Hoy fue el técnico del Southampton el encargado de abordar el episodio.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(6)">
+            {{ showContent[6] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <img alt="Silhouette of mountains" src="assets/img/card8.jpg" />
+          <ion-card-header>
+            <ion-card-title>Illia Golem, fisicoculturista conocido como "El Mutante", falleció a los 36 años</ion-card-title>
+          </ion-card-header>
+          <ion-card-content *ngIf="showContent[7]">
+            <ion-card-subtitle>Conmoción en el mundo del fisicoculturismo ha generado la reciente muerte de Illia Golem.</ion-card-subtitle>
+            Según reporta el medio británico The Sun, Illia Golem sufrió un ataque cardíaco en su casa el 6 de septiembre.
+          </ion-card-content>
+          <ion-button expand="full" fill="outline" (click)="toggleContent(7)">
+            {{ showContent[7] ? 'Leer menos' : 'Leer más' }}
+          </ion-button>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>
