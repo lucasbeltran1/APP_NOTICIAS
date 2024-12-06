@@ -1,157 +1,163 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { ToastController, AlertController } from '@ionic/angular'; // Agregamos AlertController para confirmaciones
-import { Router } from '@angular/router'; // Importamos Router para la redirección al home
+import { Component } from '@angular/core'; // Importa la clase base para componentes en Angular
+import { FormBuilder, FormGroup, Validators } from '@angular/forms'; // Importa herramientas para construir formularios reactivos
+import { AngularFireStorage } from '@angular/fire/compat/storage'; // Importa servicio para almacenamiento en Firebase
+import { AngularFirestore } from '@angular/fire/compat/firestore'; // Importa servicio para operaciones con Firestore
+import { ToastController, AlertController } from '@ionic/angular'; // Importa servicios de UI de Ionic para notificaciones y alertas
+import { Router } from '@angular/router'; // Importa servicio para navegación entre páginas
 
 @Component({
-  selector: 'app-ionic-storage-module',
-  templateUrl: './ionic-storage-module.page.html',
-  styleUrls: ['./ionic-storage-module.page.scss'],
+  selector: 'app-ionic-storage-module', // Selector para identificar el componente en las plantillas HTML
+  templateUrl: './ionic-storage-module.page.html', // Ruta al archivo de plantilla HTML
+  styleUrls: ['./ionic-storage-module.page.scss'], // Rutas a los estilos CSS específicos del componente
 })
 export class IonicStorageModulePage {
-  dataForm: FormGroup;
-  storedData: any[] = [];
-  uploadProgress: number | null = null;
-  isEditMode: boolean = false;
-  editDocId: string | null = null;
-  selectedUser: any | null = null; // Variable para el usuario seleccionado
+  dataForm: FormGroup; // Formulario reactivo para manejar datos del usuario
+  storedData: any[] = []; // Almacena datos recuperados de Firestore
+  uploadProgress: number | null = null; // Indica el progreso de una carga de archivo
+  isEditMode: boolean = false; // Define si el formulario está en modo edición
+  editDocId: string | null = null; // Identifica el documento en edición
+  selectedUser: any | null = null; // Usuario seleccionado para edición o acciones
 
   constructor(
-    private formBuilder: FormBuilder,
-    private firestore: AngularFirestore,
-    private storage: AngularFireStorage,
-    private toastController: ToastController,
-    private alertController: AlertController, // Inyectamos el AlertController
-    private router: Router // Inyectamos Router para la navegación
+    private formBuilder: FormBuilder, // Servicio para construir formularios
+    private firestore: AngularFirestore, // Servicio para interactuar con Firestore
+    private storage: AngularFireStorage, // Servicio para manejar almacenamiento en Firebase
+    private toastController: ToastController, // Servicio para mostrar mensajes emergentes
+    private alertController: AlertController, // Servicio para mostrar alertas
+    private router: Router // Servicio para manejar navegación entre rutas
   ) {
-    // Inicialización del formulario
+    // Inicializa el formulario con campos requeridos y validaciones
     this.dataForm = this.formBuilder.group({
-      name: ['', Validators.required],
-      phone: ['', Validators.required],
-      rut: ['', [Validators.required]],
-      age: ['', Validators.required],
-      sexo: ['', Validators.required],
+      name: ['', Validators.required], // Campo obligatorio para el nombre
+      phone: ['', Validators.required], // Campo obligatorio para el teléfono
+      rut: ['', [Validators.required]], // Campo obligatorio para el RUT
+      age: ['', Validators.required], // Campo obligatorio para la edad
+      sexo: ['', Validators.required], // Campo obligatorio para el sexo
     });
   }
 
-  // Método para redirigir al home
+  // Navega al home de la aplicación
   goHome() {
-    this.router.navigate(['/home']);
+    this.router.navigate(['/home']); // Usa el router para redirigir al home
   }
 
-  // Método para seleccionar un usuario con checkbox
+  // Selecciona un usuario desde la lista para acciones
   onSelectUser(data: any) {
-    // Deseleccionar otros usuarios
+    // Deselecciona todos los usuarios excepto el actual
     this.storedData.forEach(user => {
       if (user.id !== data.id) {
-        user.isSelected = false;
-        user.isEditing = false; // Salir del modo de edición si otro usuario está seleccionado
+        user.isSelected = false; // Deselecciona el usuario
+        user.isEditing = false; // Desactiva modo edición
       }
     });
-    this.selectedUser = data.isSelected ? data : null; // Guardar el usuario seleccionado
+    // Guarda el usuario seleccionado o lo deselecciona
+    this.selectedUser = data.isSelected ? data : null;
   }
 
-  // Método para activar el modo de edición en la fila seleccionada
+  // Activa el modo de edición para el usuario seleccionado
   editRow() {
     if (!this.selectedUser) {
+      // Muestra un mensaje de error si no hay usuario seleccionado
       this.showErrorMessage('Debes seleccionar un usuario para modificar.');
       return;
     }
-    // Solo activar el modo edición para el usuario seleccionado
-    this.selectedUser.isEditing = true;
+    this.selectedUser.isEditing = true; // Activa modo edición para el usuario
   }
 
-  // Método para guardar los cambios en la fila modificada
+  // Guarda los cambios realizados en el usuario seleccionado
   async saveRowData() {
     if (!this.selectedUser) {
+      // Muestra un mensaje si no hay usuario seleccionado
       this.showErrorMessage('Debes seleccionar un usuario para guardar los cambios.');
       return;
     }
 
     try {
-      // Actualizar el documento de Firestore con los nuevos datos
+      // Actualiza los datos del usuario en Firestore
       await this.firestore.collection('userData').doc(this.selectedUser.id).update({
         name: this.selectedUser.name,
         age: this.selectedUser.age,
         sexo: this.selectedUser.sexo,
         phone: this.selectedUser.phone
       });
-      this.selectedUser.isEditing = false; // Salir del modo de edición
+      this.selectedUser.isEditing = false; // Sal del modo de edición
       this.showSuccessMessage('Datos actualizados correctamente.');
     } catch (error) {
       this.handleError(error, 'Error al actualizar los datos.');
     }
   }
 
-  // Método para guardar o modificar datos en Firestore desde el formulario
+  // Guarda nuevos datos o actualiza datos existentes
   async saveData() {
     if (this.dataForm.valid) {
-      const formData = this.dataForm.value;
+      const formData = this.dataForm.value; // Recupera datos del formulario
 
       try {
         if (this.isEditMode && this.editDocId) {
+          // Si está en modo edición, actualiza el documento
           await this.firestore.collection('userData').doc(this.editDocId).update(formData);
           this.showSuccessMessage('Datos actualizados correctamente.');
         } else {
+          // Verifica que no haya duplicados de RUT en Firestore
           const rutExists = await this.firestore.collection('userData', ref => ref.where('rut', '==', formData.rut)).get().toPromise();
           if (!rutExists?.empty) {
             this.showErrorMessage('El RUT ya existe. No se pueden duplicar RUTs.');
             return;
           }
+          // Agrega un nuevo documento a Firestore
           const docRef = await this.firestore.collection('userData').add(formData);
-          this.editDocId = docRef.id; // Guarda el docId para la imagen
+          this.editDocId = docRef.id; // Guarda el ID del documento
           this.showSuccessMessage('Datos guardados correctamente.');
         }
 
-        this.dataForm.reset();
+        this.dataForm.reset(); // Reinicia el formulario
         this.isEditMode = false;
         this.editDocId = null;
-        this.showStoredData();
+        this.showStoredData(); // Refresca los datos mostrados
       } catch (error) {
         this.handleError(error, 'Error al guardar los datos.');
       }
     }
   }
 
-  // Método para mostrar los datos almacenados
+  // Recupera y muestra datos de Firestore
   async showStoredData() {
     try {
       const snapshot = await this.firestore.collection('userData').get().toPromise();
       this.storedData = snapshot?.docs.map(doc => {
-        const data = doc.data() as { [key: string]: any }; // Asegura que data es un objeto
-        return { id: doc.id, ...data, isSelected: false, isEditing: false }; // Añade isSelected e isEditing para cada fila
+        const data = doc.data() as { [key: string]: any };
+        return { id: doc.id, ...data, isSelected: false, isEditing: false }; // Agrega propiedades adicionales
       }) || [];
     } catch (error) {
       this.handleError(error, 'Error al recuperar los datos.');
     }
   }
 
-  // Método para subir imagen a Firebase Storage y guardar URL en Firestore
+  // Sube una imagen a Firebase Storage y guarda la URL en Firestore
   async uploadImage(event: any, docId: string) {
-    const file = event.target.files[0];
+    const file = event.target.files[0]; // Obtiene el archivo del input
     if (!file) {
       this.showErrorMessage('No se seleccionó ningún archivo.');
       return;
     }
 
-    const filePath = `images/${new Date().getTime()}_${file.name}`;
+    const filePath = `images/${new Date().getTime()}_${file.name}`; // Define la ruta del archivo
     const fileRef = this.storage.ref(filePath);
 
     try {
-      const task = this.storage.upload(filePath, file);
+      const task = this.storage.upload(filePath, file); // Sube el archivo
 
+      // Monitorea el progreso de subida
       task.percentageChanges().subscribe((progress) => {
         this.uploadProgress = progress || 0;
         console.log(`Progreso de subida: ${this.uploadProgress}%`);
       });
 
-      await task.snapshotChanges().toPromise();
+      await task.snapshotChanges().toPromise(); // Espera a que termine la subida
 
-      const imageUrl = await fileRef.getDownloadURL().toPromise();
+      const imageUrl = await fileRef.getDownloadURL().toPromise(); // Obtiene la URL del archivo
 
-      // Actualiza el documento en Firestore con la URL de la imagen
+      // Actualiza Firestore con la URL de la imagen
       await this.firestore.collection('userData').doc(docId).update({ imageUrl });
 
       this.showSuccessMessage('Imagen subida correctamente.');
@@ -160,50 +166,51 @@ export class IonicStorageModulePage {
     }
   }
 
-  // Método para descargar archivo del usuario
+  // Descarga un archivo desde Firebase Storage
   async downloadFile(fileUrl: string) {
     try {
       const link = document.createElement('a');
       link.href = fileUrl;
-      link.download = 'file'; // Nombre del archivo descargado
+      link.download = 'file'; // Nombre por defecto del archivo descargado
       link.click();
     } catch (error) {
       this.handleError(error, 'Error al descargar el archivo.');
     }
   }
 
-  // Confirmar eliminación de registro
+  // Muestra una alerta de confirmación para eliminar un registro
   async confirmDelete(rut: string) {
     const alert = await this.alertController.create({
-      header: 'Confirmar Eliminación',
-      message: '¿Estás seguro que deseas eliminar este registro?',
+      header: 'Confirmar Eliminación', // Título de la alerta
+      message: '¿Estás seguro que deseas eliminar este registro?', // Mensaje de la alerta
       buttons: [
         {
-          text: 'Cancelar',
+          text: 'Cancelar', // Botón para cancelar
           role: 'cancel',
         },
         {
-          text: 'Eliminar',
+          text: 'Eliminar', // Botón para confirmar eliminación
           handler: () => {
-            this.deleteByRut(rut); // Llamada a la función de eliminar
+            this.deleteByRut(rut); // Llama al método de eliminación
           }
         }
       ]
     });
 
-    await alert.present();
+    await alert.present(); // Muestra la alerta
   }
 
-  // Método para eliminar datos por RUT
+  // Elimina un documento de Firestore basado en el RUT
   async deleteByRut(rut: string) {
     try {
       const snapshot = await this.firestore.collection('userData', ref => ref.where('rut', '==', rut)).get().toPromise();
       if (snapshot && !snapshot.empty) {
+        // Elimina cada documento coincidente
         snapshot.forEach(async (doc) => {
           await this.firestore.collection('userData').doc(doc.id).delete();
         });
         this.showSuccessMessage(`Registro con RUT ${rut} eliminado correctamente.`);
-        this.showStoredData();
+        this.showStoredData(); // Refresca los datos mostrados
       } else {
         this.showErrorMessage(`No se encontró el registro con RUT ${rut}.`);
       }
@@ -212,30 +219,31 @@ export class IonicStorageModulePage {
     }
   }
 
-  // Método para manejar errores
+  // Maneja y muestra errores
   private handleError(error: any, defaultMessage: string) {
     let errorMessage = defaultMessage;
     if (error instanceof Error) {
       errorMessage = `${defaultMessage} ${error.message}`;
     }
-    this.showErrorMessage(errorMessage);
+    this.showErrorMessage(errorMessage); // Muestra mensaje de error
   }
 
-  // Métodos para mostrar mensajes
+  // Muestra mensajes de éxito en pantalla
   async showSuccessMessage(message: string) {
     const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      color: 'success',
+      message, // Mensaje de éxito
+      duration: 2000, // Duración del mensaje
+      color: 'success', // Color del mensaje
     });
     await toast.present();
   }
 
+  // Muestra mensajes de error en pantalla
   async showErrorMessage(message: string) {
     const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      color: 'danger',
+      message, // Mensaje de error
+      duration: 2000, // Duración del mensaje
+      color: 'danger', // Color del mensaje
     });
     await toast.present();
   }
